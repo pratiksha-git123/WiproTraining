@@ -1,0 +1,12 @@
+class College:
+    def __init__(self, ccode, cname, ccity):
+        self.collcode = ccode
+        self.collname = cname
+        self.collcity = ccity
+
+    def welcome_message(self):
+        print("Hello There!!!")
+
+    def display_college_details(self):
+        print(f"College code: {self.collcode} \n College name: {self.collname} "
+              f"\n city: {self.collcity}")
