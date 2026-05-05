@@ -66,44 +66,70 @@ element = driver.find_element(By.LINK_TEXT, "Careers")
 print("Element text:", element.text)
 
 #---------------------------------------------Exercise5------------------------------------------
-driver.get("https://www.amazon.in")
+service = Service()
+driver = webdriver.Chrome(service=service)
 
-wait = WebDriverWait(driver, 20)
+try:
+    driver.get("https://www.amazon.in")
+    wait = WebDriverWait(driver, 20)
 
-# Search for Smart Watches
-search_box = wait.until(EC.presence_of_element_located((By.ID, "twotabsearchtextbox")))
-search_box.clear()
-search_box.send_keys("Smart Watches")
-search_box.send_keys(Keys.ENTER)
-
-# Wait for results to load
-results = wait.until(
-    EC.presence_of_all_elements_located((By.XPATH, "//div[@data-component-type='s-search-result']"))
-)
-
-# Scroll to load filters (important for Amazon)
-driver.execute_script("window.scrollBy(0, 500);")
-
-# Click Brand filter (Samsung - more reliably present than Apple)
-brand_checkbox = wait.until(
-    EC.element_to_be_clickable(
-        (By.XPATH, "//li[@aria-label='Samsung']//i")
+    # Search for Smart Watches
+    search_box = wait.until(
+        EC.presence_of_element_located((By.ID, "twotabsearchtextbox"))
     )
-)
+    search_box.clear()
+    search_box.send_keys("Smart Watches")
+    search_box.send_keys(Keys.ENTER)
 
-# Store first product BEFORE filter (for staleness check)
-first_product_before = results[0]
+    # Wait for results to load
+    results = wait.until(
+        EC.presence_of_all_elements_located(
+            (By.XPATH, "//div[@data-component-type='s-search-result']")
+        )
+    )
 
-# Click filter
-brand_checkbox.click()
+    # Scroll to load Brand filter
+    driver.execute_script("window.scrollBy(0, 600);")
 
-# Wait for page to refresh (VERY IMPORTANT)
-wait.until(EC.staleness_of(first_product_before))
+    # Wait for Brand section
+    wait.until(EC.presence_of_element_located((By.XPATH, "//span[text()='Brand']")))
 
-# Wait for new results to load
-updated_results = wait.until(
-    EC.presence_of_all_elements_located((By.XPATH, "//div[@data-component-type='s-search-result']"))
-)
+    # Select a brand dynamically (first available)
+    brands = wait.until(
+        EC.presence_of_all_elements_located((By.XPATH, "//li[@aria-label]"))
+    )
 
-# Count products
-print("Number of products after applying Samsung filter:", len(updated_results))
+    brand_checkbox = None
+    for b in brands:
+        try:
+            checkbox = b.find_element(By.XPATH, ".//i")
+            brand_checkbox = checkbox
+            break
+        except:
+            continue
+
+    if brand_checkbox is None:
+        raise Exception("No brand checkbox found")
+
+    # Store old results for synchronization
+    first_product_before = results[0]
+
+    # Click brand filter
+    driver.execute_script("arguments[0].click();", brand_checkbox)
+
+    # Wait for page refresh
+    wait.until(EC.staleness_of(first_product_before))
+
+    # Wait for updated results
+    updated_results = wait.until(
+        EC.presence_of_all_elements_located(
+            (By.XPATH, "//div[@data-component-type='s-search-result']")
+        )
+    )
+
+    # Count products
+    print("Number of products after applying brand filter:", len(updated_results))
+
+finally:
+    # Close browser properly
+    driver.quit()
