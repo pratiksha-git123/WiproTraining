@@ -68,54 +68,42 @@ print("Element text:", element.text)
 #---------------------------------------------Exercise5------------------------------------------
 driver.get("https://www.amazon.in")
 
-search_box = driver.find_element(By.ID, "twotabsearchtextbox")
+wait = WebDriverWait(driver, 20)
+
+# Search for Smart Watches
+search_box = wait.until(EC.presence_of_element_located((By.ID, "twotabsearchtextbox")))
 search_box.clear()
 search_box.send_keys("Smart Watches")
 search_box.send_keys(Keys.ENTER)
 
-wait = WebDriverWait(driver, 20)
-
 # Wait for results to load
-wait.until(
-    EC.presence_of_element_located((By.XPATH, "//div[@data-component-type='s-search-result']"))
+results = wait.until(
+    EC.presence_of_all_elements_located((By.XPATH, "//div[@data-component-type='s-search-result']"))
 )
 
-# Scroll slowly to load filters (IMPORTANT)
-for i in range(3):
-    driver.execute_script("window.scrollBy(0, 300);")
-    time.sleep(1)
+# Scroll to load filters (important for Amazon)
+driver.execute_script("window.scrollBy(0, 500);")
 
-# Try multiple locator strategies for Apple filter
-try:
-    brand_filter = wait.until(
-        EC.element_to_be_clickable(
-            (By.XPATH, "//li[@aria-label='Apple']//i")
-        )
+# Click Brand filter (Samsung - more reliably present than Apple)
+brand_checkbox = wait.until(
+    EC.element_to_be_clickable(
+        (By.XPATH, "//li[@aria-label='Samsung']//i")
     )
-except:
-    try:
-        brand_filter = wait.until(
-            EC.element_to_be_clickable(
-                (By.XPATH, "//span[text()='Apple']/ancestor::li//i")
-            )
-        )
-    except:
-        brand_filter = wait.until(
-            EC.element_to_be_clickable(
-                (By.XPATH, "//span[contains(text(),'Apple')]")
-            )
-        )
+)
 
-# Click using JS (avoids overlay issues)
-driver.execute_script("arguments[0].click();", brand_filter)
+# Store first product BEFORE filter (for staleness check)
+first_product_before = results[0]
 
-# Wait for page update (CRITICAL)
-wait.until(
-    EC.presence_of_all_elements_located(
-        (By.XPATH, "//div[@data-component-type='s-search-result']")
-    )
+# Click filter
+brand_checkbox.click()
+
+# Wait for page to refresh (VERY IMPORTANT)
+wait.until(EC.staleness_of(first_product_before))
+
+# Wait for new results to load
+updated_results = wait.until(
+    EC.presence_of_all_elements_located((By.XPATH, "//div[@data-component-type='s-search-result']"))
 )
 
 # Count products
-products = driver.find_elements(By.XPATH, "//div[@data-component-type='s-search-result']")
-print("Number of products after filter:", len(products))
+print("Number of products after applying Samsung filter:", len(updated_results))
