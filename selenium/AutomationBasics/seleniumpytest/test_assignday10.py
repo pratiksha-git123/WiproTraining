@@ -76,9 +76,12 @@ wait = WebDriverWait(driver, 15)
 wait.until(
     EC.presence_of_element_located((By.XPATH, "//span[contains(text()='results')]"))
 )
+driver.execute_script("window.scrollBy(0, 500);")
 
 brand_filter = wait.until(
-    EC.element_to_be_clickable((By.XPATH, "//span[contains(text()='Apple')]"))
+    EC.element_to_be_clickable(
+        (By.XPATH, "//li[@aria-label='Apple']//input[@type='checkbox']/following-sibling::i")
+    )
 )
 brand_filter.click()
 
@@ -87,8 +90,4 @@ wait.until(
 )
 products = driver.find_elements(By.XPATH, "//div[@data-component-type='s-search-result']")
 print("Number of products after filter:", len(products))
-driver.quit()
-
-
-
 
